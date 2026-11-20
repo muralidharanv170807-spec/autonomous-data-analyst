@@ -1,0 +1,11 @@
+emp_id,name,department,region,salary,bonus,projects_completed,rating
+E101,Arjun Kumar,Engineering,Asia Pacific,95000,12000,8,4.8
+E102,Priya Sharma,Sales,Asia Pacific,72000,15000,12,4.9
+E103,Liam OConnor,Engineering,Europe,105000,10000,6,4.2
+E104,Sofia Rossi,Marketing,Europe,68000,7000,9,4.5
+E105,Carlos Mendez,Sales,Latin America,64000,14000,11,4.7
+E106,Hannah Abbott,Finance,North America,88000,9000,5,4.1
+E107,David Chen,Engineering,North America,115000,18000,10,4.9
+E108,Elena Silva,Marketing,Latin America,61000,6500,7,4.3
+E109,Rohan Verma,Finance,Asia Pacific,82000,8500,6,4.4
+E110,Claire Dubois,Sales,Europe,76000,16000,14,4.8

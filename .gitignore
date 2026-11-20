@@ -1,0 +1,12 @@
+﻿__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+chroma_db/
+*.duckdb
+*.duckdb.wal
+.env
+.DS_Store
+Thumbs.db

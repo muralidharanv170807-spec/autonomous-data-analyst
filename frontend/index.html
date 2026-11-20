@@ -1,0 +1,517 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autonomous Multi-Agent Data Analyst</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 36 36%27%3E%3Cdefs%3E%3ClinearGradient id=%27g%27 x1=%270%27 y1=%270%27 x2=%271%27 y2=%271%27%3E%3Cstop offset=%270%25%27 stop-color=%27%2338bdf8%27/%3E%3Cstop offset=%27100%25%27 stop-color=%27%23818cf8%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2736%27 height=%2736%27 rx=%2710%27 fill=%27%23090d16%27 stroke=%27url(%23g)%27 stroke-width=%272%27/%3E%3Cpath d=%27M10 24.5V11.5L26 24.5V11.5%27 fill=%27none%27 stroke=%27url(%23g)%27 stroke-width=%272.6%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3Ccircle cx=%2726%27 cy=%2711%27 r=%272.6%27 fill=%27%2334d399%27/%3E%3C/svg%3E" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      background-color: #060911;
+      background-image:
+        radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.11), transparent 38%),
+        radial-gradient(circle at 88% 15%, rgba(129, 140, 248, 0.10), transparent 40%),
+        radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.06), transparent 45%);
+      color: #e2e8f0;
+    }
+    .glass-card {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.84) 0%, rgba(10, 15, 29, 0.90) 100%);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.75);
+    }
+    .prose-nexus p { margin-bottom: 0.65rem; }
+    .prose-nexus p:last-child { margin-bottom: 0; }
+    .prose-nexus ul { list-style-type: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
+    .prose-nexus li { margin-bottom: 0.3rem; }
+    .prose-nexus code {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      padding: 0.1rem 0.35rem;
+      border-radius: 0.375rem;
+      font-size: 0.85em;
+      color: #7dd3fc;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.35); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.55); }
+  </style>
+</head>
+<body class="h-screen flex overflow-hidden text-slate-100 antialiased selection:bg-sky-500/30 selection:text-sky-200">
+
+  <!-- Left Navigation & Knowledge Drawer -->
+  <aside class="w-80 shrink-0 border-r border-slate-800/80 bg-[#080c17]/90 backdrop-blur-xl flex flex-col justify-between p-4 gap-4 overflow-y-auto">
+    <div class="space-y-5">
+      <!-- Brand Header -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500/20 to-indigo-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400 shadow-inner shrink-0">
+            <svg class="w-5 h-5" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="NexusAI Logo">
+              <path d="M9.5 25V11L26.5 25V11" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="26.5" cy="10.5" r="2.6" fill="#34d399"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-bold text-base tracking-tight text-white">NexusAI</span>
+              <span class="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-400/25">Pro</span>
+            </div>
+            <div class="text-[11px] text-slate-400">Multi-Agent SQL &amp; RAG Studio</div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onclick="clearChat()"
+          title="Clear conversation"
+          class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/70 transition cursor-pointer"
+        >
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Dropzone -->
+      <div>
+        <div class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          <span>Knowledge Ingestion</span>
+          <span class="text-emerald-400">Auto-Index</span>
+        </div>
+        <label
+          id="dropZone"
+          for="fileInput"
+          class="group block cursor-pointer rounded-2xl border border-dashed border-slate-700/90 hover:border-sky-400/70 bg-slate-900/50 hover:bg-sky-500/5 p-4 text-center transition"
+        >
+          <div class="w-9 h-9 mx-auto mb-2 rounded-xl bg-slate-800/90 group-hover:bg-sky-500/15 border border-slate-700 group-hover:border-sky-400/40 flex items-center justify-center text-sky-400 transition">
+            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+          </div>
+          <div class="text-xs font-medium text-slate-200">Drop CSV or PDF files here</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">DuckDB tables &amp; ChromaDB vectors</div>
+          <input id="fileInput" type="file" accept=".csv,.pdf" multiple class="hidden" />
+        </label>
+        <div id="uploadStatus" class="hidden mt-2 px-3 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/25 text-xs text-sky-300"></div>
+      </div>
+
+      <!-- Active Sources -->
+      <div>
+        <div class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          <span>Active Sources</span>
+          <span id="sourceCount" class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px]">0</span>
+        </div>
+        <div id="fileList" class="space-y-1.5 text-xs max-h-56 overflow-y-auto pr-0.5"></div>
+      </div>
+
+      <!-- Curated Prompts -->
+      <div>
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Guided Workflows</div>
+        <div class="space-y-1.5">
+          <button
+            type="button"
+            onclick="sendPrompt('What is total revenue and profit by region?')"
+            class="w-full text-left p-2.5 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 hover:border-sky-500/40 transition text-xs text-slate-200 flex items-center justify-between gap-2 cursor-pointer"
+          >
+            <span class="truncate">Revenue &amp; profit by region</span>
+            <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-sky-400 shrink-0"></i>
+          </button>
+          <button
+            type="button"
+            onclick="sendPrompt('What are the regional discount caps and minimum profit margin rules?')"
+            class="w-full text-left p-2.5 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/40 transition text-xs text-slate-200 flex items-center justify-between gap-2 cursor-pointer"
+          >
+            <span class="truncate">Discount caps &amp; margin policy</span>
+            <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-indigo-400 shrink-0"></i>
+          </button>
+          <button
+            type="button"
+            onclick="sendPrompt('What is the total amount_usd and average flag_count by txn_type in wire_transfers?')"
+            class="w-full text-left p-2.5 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 hover:border-emerald-500/40 transition text-xs text-slate-200 flex items-center justify-between gap-2 cursor-pointer"
+          >
+            <span class="truncate">Wire transfers &amp; AML risk flags</span>
+            <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Runtime Status -->
+    <div class="pt-3 border-t border-slate-800/80 space-y-2 text-[11px] text-slate-400">
+      <div class="flex items-center justify-between">
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Local Runtime
+        </span>
+        <span class="text-slate-300 font-medium">Ollama &bull; qwen3.5:9b</span>
+      </div>
+      <div class="text-[10px] text-slate-500">Zero cloud telemetry &bull; DuckDB + Chroma + LangGraph</div>
+    </div>
+  </aside>
+
+  <!-- Main Analytical Stage -->
+  <main class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+    <!-- Top Bar -->
+    <header class="h-14 shrink-0 border-b border-slate-800/80 bg-[#080c17]/75 backdrop-blur-md px-6 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="text-sm font-semibold text-white truncate">Intelligence Workspace</span>
+        <span class="hidden sm:inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
+          <i data-lucide="shield-check" class="w-3 h-3"></i>
+          100% Local &amp; Grounded
+        </span>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-slate-400">
+        <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/90 border border-slate-800">
+          <i data-lucide="git-branch" class="w-3.5 h-3.5 text-sky-400"></i>
+          SQL / RAG / Hybrid Router
+        </span>
+      </div>
+    </header>
+
+    <!-- Scrollable Analysis Stream -->
+    <div id="chatStream" class="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+      <div id="welcomeHero" class="max-w-4xl mx-auto glass-card rounded-3xl p-8 mt-2">
+        <div class="inline-flex items-center gap-2 text-xs font-medium px-3 py-1 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/25 mb-4">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          Self-Evaluating Multi-Agent Engine
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+          Query structured datasets and audit compliance policies in one place.
+        </h1>
+        <p class="text-sm text-slate-400 mt-2.5 max-w-2xl leading-relaxed">
+          NexusAI dynamically decomposes hybrid rules, executes guarded SQL against DuckDB, retrieves policy citations from ChromaDB, and verifies answer groundedness before presenting visuals and exportable tables.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-7">
+          <div class="rounded-2xl bg-slate-900/70 border border-slate-800/90 p-4">
+            <div class="w-8 h-8 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center mb-3">
+              <i data-lucide="database" class="w-4 h-4"></i>
+            </div>
+            <div class="text-xs font-semibold text-white">Guarded SQL Analytics</div>
+            <div class="text-xs text-slate-400 mt-1 leading-relaxed">Read-only query execution, automatic chart generation, and one-click CSV export.</div>
+          </div>
+          <div class="rounded-2xl bg-slate-900/70 border border-slate-800/90 p-4">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center mb-3">
+              <i data-lucide="file-search" class="w-4 h-4"></i>
+            </div>
+            <div class="text-xs font-semibold text-white">Policy RAG &amp; Citations</div>
+            <div class="text-xs text-slate-400 mt-1 leading-relaxed">Grounds compliance and operational rules in indexed PDFs with page-level excerpts.</div>
+          </div>
+          <div class="rounded-2xl bg-slate-900/70 border border-slate-800/90 p-4">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-3">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            </div>
+            <div class="text-xs font-semibold text-white">Self-Evaluated Output</div>
+            <div class="text-xs text-slate-400 mt-1 leading-relaxed">Scores every response for groundedness and manages workspace files cleanly.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Command Dock -->
+    <div class="p-4 border-t border-slate-800/80 bg-[#080c17]/85 backdrop-blur-xl">
+      <form id="queryForm" class="max-w-4xl mx-auto">
+        <div class="flex items-center gap-2.5 rounded-2xl bg-slate-900/90 border border-slate-700/80 focus-within:border-sky-400/70 focus-within:ring-2 focus-within:ring-sky-500/20 p-2 pl-4 shadow-lg transition">
+          <i data-lucide="terminal" class="w-4 h-4 text-sky-400 shrink-0"></i>
+          <input
+            id="promptInput"
+            type="text"
+            placeholder="Ask an analytical, policy, or hybrid audit question..."
+            class="flex-1 bg-transparent focus:outline-none text-sm text-white placeholder:text-slate-500 py-1.5"
+          />
+          <button
+            id="sendBtn"
+            type="submit"
+            class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-300 hover:from-sky-300 hover:to-cyan-200 text-slate-950 font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+          >
+            <span>Analyze</span>
+            <i data-lucide="arrow-up" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    window._lastSqlRows = [];
+
+    function renderIcons() {
+      if (window.lucide && typeof window.lucide.createIcons === "function") {
+        window.lucide.createIcons();
+      }
+    }
+
+    function renderMarkdown(mdText) {
+      const raw = String(mdText || "");
+      if (window.marked && typeof window.marked.parse === "function") {
+        return window.marked.parse(raw);
+      }
+      return raw.replace(/\n/g, "<br>");
+    }
+
+    function exportLastCsv() {
+      const rows = window._lastSqlRows || [];
+      if (!rows.length) return;
+      const headers = Object.keys(rows[0]);
+      const escapeCsv = (val) => `"${String(val ?? "").replace(/"/g, '""')}"`;
+      const csvLines = [
+        headers.map(escapeCsv).join(","),
+        ...rows.map((r) => headers.map((h) => escapeCsv(r[h])).join(","))
+      ];
+      const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `NexusAI_results_${Date.now()}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    async function deleteSourceFile(event, filename) {
+      event.preventDefault();
+      event.stopPropagation();
+      const res = await fetch(`/files/${encodeURIComponent(filename)}`, { method: "DELETE" });
+      if (res.ok) {
+        await loadFiles();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || `Failed to delete ${filename}`);
+      }
+    }
+
+    async function loadFiles() {
+      const res = await fetch("/files");
+      const data = await res.json();
+      const files = data.files || [];
+      document.getElementById("sourceCount").textContent = String(files.length);
+      const list = document.getElementById("fileList");
+      list.innerHTML = files.map((f) => {
+        const isPdf = f.toLowerCase().endsWith(".pdf");
+        const badge = isPdf
+          ? '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shrink-0">PDF</span>'
+          : '<span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shrink-0">CSV</span>';
+        const jsSafe = f.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+        const attrSafe = f.replace(/"/g, "&quot;");
+        return `
+          <div class="group flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-slate-900/75 hover:bg-slate-900 border border-slate-800/90 hover:border-sky-500/35 text-slate-200 transition">
+            <div class="flex items-center gap-2 min-w-0">
+              ${badge}
+              <span class="truncate" title="${attrSafe}">${f}</span>
+            </div>
+            <button
+              type="button"
+              onclick="deleteSourceFile(event, '${jsSafe}')"
+              title="Delete ${attrSafe}"
+              aria-label="Delete ${attrSafe}"
+              class="text-slate-400 hover:text-rose-400 hover:bg-rose-500/15 rounded-md px-1.5 py-0.5 text-xs font-bold leading-none transition shrink-0 cursor-pointer"
+            >&times;</button>
+          </div>
+        `;
+      }).join("");
+      renderIcons();
+    }
+
+    loadFiles();
+
+    const dropZone = document.getElementById("dropZone");
+    ["dragenter", "dragover"].forEach((evt) => {
+      dropZone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        dropZone.classList.add("border-sky-400", "bg-sky-500/10");
+      });
+    });
+    ["dragleave", "drop"].forEach((evt) => {
+      dropZone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("border-sky-400", "bg-sky-500/10");
+      });
+    });
+    dropZone.addEventListener("drop", async (e) => {
+      const files = e.dataTransfer?.files;
+      if (files && files.length) {
+        await uploadFiles(files);
+      }
+    });
+
+    async function uploadFiles(files) {
+      if (!files.length) return;
+      const status = document.getElementById("uploadStatus");
+      status.classList.remove("hidden");
+      status.textContent = `Uploading & indexing ${files.length} file(s)...`;
+      const formData = new FormData();
+      for (const f of files) formData.append("files", f);
+      await fetch("/upload", { method: "POST", body: formData });
+      status.textContent = `Indexed ${files.length} file(s) successfully!`;
+      await loadFiles();
+      setTimeout(() => status.classList.add("hidden"), 3000);
+    }
+
+    document.getElementById("fileInput").addEventListener("change", async (e) => {
+      await uploadFiles(e.target.files);
+      e.target.value = "";
+    });
+
+    function clearChat() {
+      document.getElementById("chatStream").innerHTML = "";
+    }
+
+    function sendPrompt(text) {
+      document.getElementById("promptInput").value = text;
+      document.getElementById("queryForm").dispatchEvent(new Event("submit"));
+    }
+
+    document.getElementById("queryForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = document.getElementById("promptInput");
+      const btn = document.getElementById("sendBtn");
+      const q = input.value.trim();
+      if (!q) return;
+
+      const hero = document.getElementById("welcomeHero");
+      if (hero) hero.remove();
+
+      const stream = document.getElementById("chatStream");
+      input.value = "";
+      btn.disabled = true;
+
+      stream.insertAdjacentHTML("beforeend", `
+        <div class="max-w-4xl mx-auto flex justify-end">
+          <div class="bg-gradient-to-r from-sky-500/20 to-indigo-500/20 border border-sky-400/35 text-white px-5 py-3 rounded-2xl rounded-tr-sm text-sm max-w-2xl shadow-md">
+            ${q}
+          </div>
+        </div>
+      `);
+
+      const loaderId = "loader-" + Date.now();
+      stream.insertAdjacentHTML("beforeend", `
+        <div id="${loaderId}" class="max-w-4xl mx-auto glass-card rounded-2xl p-6 space-y-3 animate-pulse">
+          <div class="flex items-center gap-2 text-xs text-sky-300 font-medium">
+            <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+            <span>Routing query &rarr; Executing tools &rarr; Self-evaluating groundedness...</span>
+          </div>
+          <div class="h-3 bg-slate-800 rounded w-3/4"></div>
+          <div class="h-3 bg-slate-800 rounded w-1/2"></div>
+        </div>
+      `);
+      renderIcons();
+      stream.scrollTop = stream.scrollHeight;
+
+      try {
+        const res = await fetch("/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: q })
+        });
+        const data = await res.json();
+        document.getElementById(loaderId)?.remove();
+
+        const chartId = "chart-" + Date.now();
+        const scoreColor = data.groundedness_score >= 4
+          ? "text-emerald-300 bg-emerald-500/10 border-emerald-500/30"
+          : "text-amber-300 bg-amber-500/10 border-amber-500/30";
+
+        let sqlSection = "";
+        if (data.sql_query) {
+          const rows = data.sql_results || [];
+          if (rows.length) {
+            window._lastSqlRows = rows;
+          }
+          const headers = rows.length ? Object.keys(rows[0]) : [];
+          const tableHtml = rows.length ? `
+            <div class="overflow-x-auto mt-3 rounded-xl border border-slate-800">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-slate-900/95 text-slate-400 uppercase">
+                  <tr>${headers.map((h) => `<th class="px-3.5 py-2.5">${h}</th>`).join("")}</tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/80">
+                  ${rows.slice(0, 15).map((r) => `<tr class="hover:bg-slate-800/40 transition">${headers.map((h) => `<td class="px-3.5 py-2 text-slate-200">${r[h]}</td>`).join("")}</tr>`).join("")}
+                </tbody>
+              </table>
+            </div>` : "";
+
+          const exportBtnHtml = rows.length
+            ? `<button type="button" onclick="exportLastCsv()" class="text-xs px-3 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-400/35 transition flex items-center gap-1.5 cursor-pointer"><i data-lucide="download" class="w-3.5 h-3.5"></i>Export CSV</button>`
+            : "";
+
+          sqlSection = `
+            <details class="mt-4 group rounded-2xl bg-slate-950/60 border border-slate-800/90 p-3.5" open>
+              <div class="flex items-center justify-between gap-2">
+                <summary class="cursor-pointer text-xs font-medium text-slate-300 hover:text-sky-300 flex items-center gap-1.5 select-none">
+                  <i data-lucide="database" class="w-3.5 h-3.5 text-sky-400"></i>
+                  <span>SQL Query &amp; Result Set (${rows.length} rows)</span>
+                </summary>
+                ${exportBtnHtml}
+              </div>
+              <pre class="mt-3 p-3 rounded-xl bg-[#050811] border border-slate-800 text-xs text-sky-300 overflow-x-auto">${data.sql_query}</pre>
+              ${tableHtml}
+            </details>`;
+        }
+
+        let citeSection = "";
+        if (data.citations && data.citations.length) {
+          citeSection = `
+            <details class="mt-3 rounded-2xl bg-slate-950/60 border border-slate-800/90 p-3.5" open>
+              <summary class="cursor-pointer text-xs font-medium text-slate-300 hover:text-indigo-300 flex items-center gap-1.5 select-none">
+                <i data-lucide="book-open" class="w-3.5 h-3.5 text-indigo-400"></i>
+                <span>Policy Citations (${data.citations.length} excerpts)</span>
+              </summary>
+              <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                ${data.citations.map((c) => `
+                  <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs">
+                    <div class="font-semibold text-indigo-300 mb-1">${c.source || "Policy"} &bull; Page ${c.page || "?"}</div>
+                    <div class="text-slate-300 leading-relaxed">${c.text || c.content || ""}</div>
+                  </div>`).join("")}
+              </div>
+            </details>`;
+        }
+
+        stream.insertAdjacentHTML("beforeend", `
+          <div class="max-w-4xl mx-auto glass-card rounded-3xl p-6 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800/80">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-semibold tracking-wide">${data.route}</span>
+                <span class="px-2.5 py-1 rounded-lg border text-xs font-semibold ${scoreColor}">Groundedness: ${data.groundedness_score}/5</span>
+              </div>
+              <span class="text-[11px] text-slate-400 flex items-center gap-1">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+                Verified by Self-Evaluator
+              </span>
+            </div>
+            <div class="text-sm leading-relaxed text-slate-100 prose-nexus">${renderMarkdown(data.answer)}</div>
+            ${data.chart_json ? `<div id="${chartId}" class="w-full h-80 rounded-2xl overflow-hidden border border-slate-800/90 bg-slate-950/70 p-2"></div>` : ""}
+            ${sqlSection}
+            ${citeSection}
+          </div>
+        `);
+
+        if (data.chart_json && window.Plotly) {
+          const fig = typeof data.chart_json === "string" ? JSON.parse(data.chart_json) : data.chart_json;
+          const layout = Object.assign({
+            paper_bgcolor: "rgba(0,0,0,0)",
+            plot_bgcolor: "rgba(0,0,0,0)",
+            font: { color: "#cbd5e1" }
+          }, fig.layout || {});
+          window.Plotly.newPlot(chartId, fig.data || [], layout, { responsive: true, displayModeBar: false });
+        }
+
+        renderIcons();
+        stream.scrollTop = stream.scrollHeight;
+      } catch (err) {
+        document.getElementById(loaderId)?.remove();
+        stream.insertAdjacentHTML("beforeend", `
+          <div class="max-w-4xl mx-auto rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300">
+            Request failed: ${err.message}
+          </div>
+        `);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+txn_id,client_name,account_tier,country_risk,txn_type,amount_usd,kyc_verified,flag_count
+TXN-901,Aether Capital,Enterprise,Low,Wire,18500,Yes,0
+TXN-902,Kestrel Imports,Standard,High,Wire,14200,Yes,1
+TXN-903,Boreal Logistics,Standard,Medium,ACH,4200,No,0
+TXN-904,Vanguard Retail,Enterprise,High,Wire,4500,Yes,0
+TXN-905,Solstice Ventures,Private,Low,Crypto,28000,Yes,2
+TXN-906,Meridian Trading,Standard,Low,ACH,2100,No,0
+TXN-907,Cobalt Holdings,Private,High,Crypto,12500,No,3
+TXN-908,Helios Energy,Enterprise,Medium,Wire,9500,Yes,0
+TXN-909,Orion Labs,Standard,Low,Crypto,16000,Yes,1
+TXN-910,Apex Maritime,Standard,High,ACH,8900,Yes,2

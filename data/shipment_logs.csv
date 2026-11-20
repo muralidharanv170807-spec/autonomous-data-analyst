@@ -1,0 +1,9 @@
+﻿shipment_id,carrier,region,shipping_mode,delivery_days,freight_cost_usd,damaged_units
+SHP-501,DHL,Europe,Air,2,480,0
+SHP-502,FedEx,North America,Ground,7,320,0
+SHP-503,Maersk,Asia Pacific,Sea,22,1450,0
+SHP-504,DHL,North America,Air,4,610,0
+SHP-505,UPS,Europe,Ground,5,290,3
+SHP-506,FedEx,Asia Pacific,Air,2,530,0
+SHP-507,Maersk,Europe,Sea,16,1200,0
+SHP-508,UPS,North America,Ground,4,260,0
