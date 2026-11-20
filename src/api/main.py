@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
+from src.config import NEXUSAI_DATA_DIR
 from src.agents.graph import run_query, db_engine, vector_store
 
 app = FastAPI(title="NexusAI API")
@@ -31,17 +32,17 @@ def health():
 
 @app.get("/files")
 def list_files():
-    os.makedirs("data", exist_ok=True)
-    return {"files": [f for f in sorted(os.listdir("data")) if f.endswith((".csv", ".pdf"))]}
+    os.makedirs(NEXUSAI_DATA_DIR, exist_ok=True)
+    return {"files": [f for f in sorted(os.listdir(NEXUSAI_DATA_DIR)) if f.endswith((".csv", ".pdf"))]}
 
 @app.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...)):
     try:
-        os.makedirs("data", exist_ok=True)
+        os.makedirs(NEXUSAI_DATA_DIR, exist_ok=True)
         saved = []
         for f in files:
             safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", f.filename)
-            dest = os.path.join("data", safe_name)
+            dest = os.path.join(NEXUSAI_DATA_DIR, safe_name)
             with open(dest, "wb") as out:
                 out.write(await f.read())
             if safe_name.lower().endswith(".pdf"):
@@ -55,7 +56,7 @@ async def upload_files(files: List[UploadFile] = File(...)):
 @app.delete("/files/{filename}")
 def delete_file(filename: str):
     safe_name = os.path.basename(filename)
-    target = os.path.join("data", safe_name)
+    target = os.path.join(NEXUSAI_DATA_DIR, safe_name)
     if not os.path.exists(target):
         raise HTTPException(status_code=404, detail="File not found")
     try:

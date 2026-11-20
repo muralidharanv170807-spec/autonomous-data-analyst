@@ -2,6 +2,7 @@
 import os
 import streamlit as st
 import plotly.io as pio
+from src.config import NEXUSAI_DATA_DIR
 from src.agents.graph import run_query, db_engine, vector_store
 
 # --- PAGE CONFIG ---
@@ -100,10 +101,10 @@ with st.sidebar:
     )
     if uploaded_files:
         if st.button("⚡ Process & Index Files", type="primary"):
-            os.makedirs("data", exist_ok=True)
+            os.makedirs(NEXUSAI_DATA_DIR, exist_ok=True)
             with st.spinner("Indexing files into DuckDB & ChromaDB..."):
                 for f in uploaded_files:
-                    save_path = os.path.join("data", f.name)
+                    save_path = os.path.join(NEXUSAI_DATA_DIR, f.name)
                     with open(save_path, "wb") as out:
                         out.write(f.getbuffer())
                     if f.name.lower().endswith(".pdf"):

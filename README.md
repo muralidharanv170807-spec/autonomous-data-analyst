@@ -13,13 +13,27 @@ NexusAI is a privacy-first data analysis workspace that answers business and com
 - **Exports results:** Download the latest SQL result rows as a timestamped `NexusAI_results_<timestamp>.csv` file.
 - **Serves a browser UI:** FastAPI serves the NexusAI interface and provides the query, upload, and source-management endpoints.
 
+## Architecture
+
+```text
+UI -> FastAPI -> LangGraph Router [SQL / Policy RAG / Hybrid]
+                         |                 |
+                         +---- DuckDB / ChromaDB
+                                   |
+                            Self-Evaluator
+```
+
+SQL routes query DuckDB; Policy RAG retrieves evidence from ChromaDB; Hybrid routes combine both. The LangGraph workflow synthesizes the evidence and evaluates answer groundedness.
+
 ## Project structure
 
 ```text
 autonomous-data-analyst/
+├── .env.example               # Safe local configuration defaults
 ├── frontend/
 │   └── index.html             # Browser-based NexusAI workspace
 ├── src/
+│   ├── config.py              # Environment and local runtime settings
 │   ├── agents/
 │   │   └── graph.py           # LangGraph routing, analysis, and evaluation
 │   ├── api/
@@ -28,14 +42,16 @@ autonomous-data-analyst/
 │   │   └── duckdb_engine.py   # CSV loading and DuckDB queries
 │   └── rag/
 │       └── vector_store.py    # PDF indexing and ChromaDB retrieval
-├── data/                      # Local CSV datasets and PDF sources
+├── data/
+│   ├── generate_sample_data.py
+│   └── *.csv / *.pdf          # Sample datasets and policy sources
 ├── chroma_db/                 # Local ChromaDB persistence
 ├── app.py                     # Streamlit interface
 ├── Modelfile                  # Ollama model configuration
 └── requirements.txt           # Python dependencies
 ```
 
-`data/`, `chroma_db/`, and Python virtual environments are local runtime data and are excluded from Git.
+Files in `data/` are sample/demo inputs. Run `python data/generate_sample_data.py` from the repository root to generate synthetic `sales_transactions.csv` and `company_compliance_policy.pdf`; the other sample CSV and PDF files are provided as example inputs. Review the employee names/compensation and transaction-style records in the sample CSVs and confirm they are synthetic or anonymized before distributing the repository publicly. `chroma_db/` and Python virtual environments are local runtime data and are excluded from Git.
 
 ## Windows / PowerShell setup
 
@@ -62,7 +78,16 @@ Prerequisites: Python 3.12 (or another compatible Python version), Git, and [Oll
    pip install -r requirements.txt
    ```
 
-3. Pull the local model and make sure Ollama is running:
+3. Create a local environment file from the safe defaults and customize it if needed:
+
+   ```powershell
+   Copy-Item .env.example .env
+   notepad .env
+   ```
+
+   `.env` is ignored by Git; `.env.example` contains only non-secret local defaults. It configures `OLLAMA_MODEL`, `OLLAMA_BASE_URL`, `OLLAMA_NUM_CTX`, `NEXUSAI_DATA_DIR`, and `NEXUSAI_CHROMA_DIR`.
+
+4. Pull the local model and make sure Ollama is running:
 
    ```powershell
    ollama pull qwen3.5:9b
@@ -71,14 +96,14 @@ Prerequisites: Python 3.12 (or another compatible Python version), Git, and [Oll
 
    Keep Ollama available while using NexusAI. If Ollama is already running as a background service, the model can be pulled in one terminal and the API started in another.
 
-4. In a second PowerShell terminal, activate the environment and start the API:
+5. In a second PowerShell terminal, activate the environment and start the API:
 
    ```powershell
    .\.venv\Scripts\Activate.ps1
    python -m uvicorn src.api.main:app --reload --host 127.0.0.1 --port 8000
    ```
 
-5. Open [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser. The interactive API documentation is at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+6. Open [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser. The interactive API documentation is at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
 ## Example questions
 
@@ -94,15 +119,14 @@ Upload CSV and PDF sources from the left-hand panel. CSV files are loaded into D
 From the project directory, stage and commit the project, configure the GitHub remote, and push the `main` branch:
 
 ```powershell
+git remote set-url origin https://github.com/muralidharanv170807-spec/autonomous-data-analyst.git
 git add .
-git commit -m "Update NexusAI data analyst project"
-git branch -M main
-git remote add origin https://github.com/muralidharanv170807-spec/autonomous-data-analyst.git
+git commit -m "Update NexusAI project configuration and documentation"
 git push -u origin main
 ```
 
-If `origin` is already configured, update it instead of adding it again:
+For a new local repository without an `origin` remote, add it once:
 
 ```powershell
-git remote set-url origin https://github.com/muralidharanv170807-spec/autonomous-data-analyst.git
+git remote add origin https://github.com/muralidharanv170807-spec/autonomous-data-analyst.git
 ```

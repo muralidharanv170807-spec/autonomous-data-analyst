@@ -8,5 +8,6 @@ chroma_db/
 *.duckdb
 *.duckdb.wal
 .env
+!.env.example
 .DS_Store
 Thumbs.db

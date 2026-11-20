@@ -1,4 +1,5 @@
-﻿import json
+import json
+import os
 import re
 from typing import TypedDict, List, Dict, Any, Optional
 import plotly.express as px
@@ -6,6 +7,13 @@ import pandas as pd
 from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, END
 
+from src.config import (
+    NEXUSAI_CHROMA_DIR,
+    NEXUSAI_DATA_DIR,
+    OLLAMA_BASE_URL,
+    OLLAMA_MODEL,
+    OLLAMA_NUM_CTX,
+)
 from src.database.duckdb_engine import DuckDBEngine
 from src.rag.vector_store import PolicyVectorStore
 
@@ -29,16 +37,16 @@ class AgentState(TypedDict):
 
 
 llm = ChatOllama(
-    model="qwen3.5:9b",
-    base_url="http://localhost:11434",
-    num_ctx=16384,
+    model=OLLAMA_MODEL,
+    base_url=OLLAMA_BASE_URL,
+    num_ctx=OLLAMA_NUM_CTX,
     temperature=0,
     reasoning=False,
 )
-db_engine = DuckDBEngine(csv_directory="data")
-vector_store = PolicyVectorStore(persist_path="./chroma_db")
+db_engine = DuckDBEngine(csv_directory=NEXUSAI_DATA_DIR)
+vector_store = PolicyVectorStore(persist_path=NEXUSAI_CHROMA_DIR)
 if vector_store.get_collection_count() == 0:
-    vector_store.add_files(["data/company_compliance_policy.pdf"])
+    vector_store.add_files([os.path.join(NEXUSAI_DATA_DIR, "company_compliance_policy.pdf")])
 
 
 def router_node(state: AgentState) -> Dict[str, Any]:
